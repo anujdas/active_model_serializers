@@ -130,8 +130,16 @@ module ActiveModel
         end
 
         def serializables
-          associated_object.map do |item|
-            find_serializable(item)
+          if embed_typed_ids?
+            associated_object.each_with_object({}) do |item, hash|
+              key = item.class.to_s.demodulize.underscore.pluralize.to_sym
+              hash[key] ||= []
+              hash[key] << find_serializable(item)
+            end
+          else
+            {
+              root => associated_object.map { |item| find_serializable(item) }
+            }
           end
         end
 
@@ -166,7 +174,7 @@ module ActiveModel
         end
 
         def polymorphic?
-          option :polymorphic
+          option(:polymorphic) || embed_typed_ids?
         end
 
         def root
@@ -218,6 +226,12 @@ module ActiveModel
           object = associated_object
           value = object && find_serializable(object)
           value ? [value] : []
+        end
+
+        def serializables
+          object = associated_object
+          value = object && find_serializable(object)
+          { root => (value ? [value] : []) }
         end
 
         def serialize_ids
