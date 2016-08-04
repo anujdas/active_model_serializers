@@ -75,6 +75,10 @@ module ActiveModel
           [:id, :ids].include? option(:embed, source_serializer._embed)
         end
 
+        def embed_typed_ids?
+          [:typed_id, :typed_ids].include? option(:embed, source_serializer._embed)
+        end
+
         def embed_objects?
           [:object, :objects].include? option(:embed, source_serializer._embed)
         end
@@ -87,7 +91,7 @@ module ActiveModel
           !associated_object.nil?
         end
 
-      protected
+        protected
 
         def find_serializable(object)
           if target_serializer
@@ -104,7 +108,7 @@ module ActiveModel
         def key
           if key = option(:key)
             key
-          elsif embed_ids?
+          elsif embed_ids? || embed_typed_ids?
             "#{@name.to_s.singularize}_ids".to_sym
           else
             @name
@@ -141,6 +145,15 @@ module ActiveModel
             end
           end
         end
+
+        def serialize_typed_ids
+          associated_object.map do |item|
+            {
+              :type => item.class.to_s.demodulize.underscore.to_sym,
+              :id => item.read_attribute_for_serialization(embed_key)
+            }
+          end
+        end
       end
 
       class HasOne < Config #:nodoc:
@@ -169,7 +182,7 @@ module ActiveModel
         def key
           if key = option(:key)
             key
-          elsif embed_ids? && !polymorphic?
+          elsif (embed_ids? || embed_typed_ids?) && !polymorphic?
             "#{@name}_id".to_sym
           else
             @name
@@ -226,6 +239,15 @@ module ActiveModel
           else
             nil
           end
+        end
+
+        def serialize_typed_ids
+          return unless associated_object
+
+          {
+            :type => polymorphic_key,
+            :id => associated_object.read_attribute_for_serialization(embed_key)
+          }
         end
       end
     end

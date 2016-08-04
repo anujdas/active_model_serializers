@@ -238,9 +238,13 @@ module ActiveModel
 
       # Define how associations should be embedded.
       #
-      #   embed :objects               # Embed associations as full objects
-      #   embed :ids                   # Embed only the association ids
-      #   embed :ids, :include => true # Embed the association ids and include objects in the root
+      #   embed :objects                       # Embed associations as full objects
+      #   embed :ids                           # Embed only the association ids
+      #   embed :typed_ids                     # Embed the association type and id as hashes
+      #   embed :ids, :include => true         # Embed the association ids and include objects
+      #                                          in the root
+      #   embed :typed_ids, :include => true   # Embed the association type and ids and include
+      #                                          objects in the root
       #
       def embed(type, options={})
         self._embed = type
@@ -423,6 +427,16 @@ module ActiveModel
         elsif association.embed_in_root? && association.embeddable?
           merge_association hash, association.root, association.serializables, unique_values
         end
+
+      elsif association.embed_typed_ids?
+        node[association.key] = association.serialize_typed_ids
+
+        if association.embed_in_root? && hash.nil?
+          raise IncludeError.new(self.class, association.name)
+        elsif association.embed_in_root? && association.embeddable?
+          merge_association hash, association.root, association.serializables, unique_values
+        end
+
       elsif association.embed_objects?
         node[association.key] = association.serialize
       end
