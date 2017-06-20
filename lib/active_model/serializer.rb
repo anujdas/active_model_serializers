@@ -65,6 +65,7 @@ module ActiveModel
     class_attribute :_embed
     self._embed = :objects
     class_attribute :_root_embed
+    class_attribute :_recursive_embed
 
     class_attribute :cache
     class_attribute :perform_caching
@@ -236,7 +237,7 @@ module ActiveModel
         name.sub(/Serializer$/, '').constantize
       end
 
-      # Define how associations should be embedded.
+      # Define how associations should be embedded
       #
       #   embed :objects                       # Embed associations as full objects
       #   embed :ids                           # Embed only the association ids
@@ -245,10 +246,14 @@ module ActiveModel
       #                                          in the root
       #   embed :typed_ids, :include => true   # Embed the association type and ids and include
       #                                          objects in the root
+      #   embed :typed_ids, :include => true,  # Embed the association types and
+      #     :recursive => true                   ids, as well as for their
+      #                                          associations
       #
       def embed(type, options={})
         self._embed = type
         self._root_embed = true if options[:include]
+        self._recursive_embed = true if options[:recursive]
       end
 
       # Defines the root used on serialization. If false, disables the root.
